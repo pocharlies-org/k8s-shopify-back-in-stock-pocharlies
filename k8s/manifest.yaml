@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: back-in-stock-app
+  labels:
+    app.kubernetes.io/name: back-in-stock-app
+spec:
+  replicas: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: back-in-stock-app
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: back-in-stock-app
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      imagePullSecrets:
+        - name: harbor-pull
+      nodeSelector:
+        role: edge
+        kubernetes.io/arch: amd64
+      tolerations:
+        - key: role
+          operator: Equal
+          value: edge
+          effect: NoSchedule
+      containers:
+        - name: app
+          image: harbor.e-dani.com/homelab/shopify-back-in-stock:pending
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 3470
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: PORT
+              value: "3470"
+            - name: SHOPIFY_APP_URL
+              value: https://sauvage.e-dani.com/apps/back-in-stock
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: shared-postgres-app
+                  key: username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: shared-postgres-app
+                  key: password
+            - name: DATABASE_URL
+              value: postgresql://$(DB_USER):$(DB_PASSWORD)@postgres-shared-rw.databases.svc.cluster.local:5432/back_in_stock
+          envFrom:
+            - secretRef:
+                name: back-in-stock-secrets
+                optional: true
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 192Mi
+            limits:
+              memory: 768Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: back-in-stock-app
+  labels:
+    app.kubernetes.io/name: back-in-stock-app
+spec:
+  selector:
+    app.kubernetes.io/name: back-in-stock-app
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
