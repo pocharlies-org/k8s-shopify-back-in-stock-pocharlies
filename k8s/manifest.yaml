@@ -83,7 +83,7 @@ spec:
           effect: NoSchedule
       containers:
         - name: app
-          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock@sha256:ee34cdc5cc131e95abe60938eac00c2ba0d46ec069055529db697585bb2487cd
+          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock@sha256:9a31ec08727862451c5892aaf74cfb0f0f475cf7f9e4fbc6622d7a79ee851685
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -187,7 +187,7 @@ spec:
           effect: NoSchedule
       containers:
         - name: worker
-          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock-worker-email@sha256:39b75e369b904ac58839ec29d518ae52c8436747a763e1b95e2df3138a2347d0
+          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock-worker-email@sha256:c6562c7fac4bc6e4a29ca3349cf7b48d584daa983ab4175df40efaf12728d3b9
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -275,7 +275,7 @@ spec:
           effect: NoSchedule
       containers:
         - name: worker
-          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock-worker-whatsapp@sha256:3aaf9eda9177a6c364931bbe896a8771a1ed47d08dff782a2733cfafc42707c9
+          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock-worker-whatsapp@sha256:bb2d32938fd3ee0e3977087fdc26d9ff6c7e4845c9c95ea530586d487789ca46
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -363,7 +363,7 @@ spec:
           effect: NoSchedule
       containers:
         - name: worker
-          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock-worker-telegram@sha256:7c507ce540fd8a6d400ba433a1da47dc91da6f921b2303d9199d4fc68dcf5559
+          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock-worker-telegram@sha256:c373c564e3ed45d450da0dc75ce0f7f33d0df794f8e5f8776617b56f6f747f6e
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
