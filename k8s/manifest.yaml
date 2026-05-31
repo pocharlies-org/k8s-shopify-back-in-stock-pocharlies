@@ -60,7 +60,7 @@ metadata:
   labels:
     app.kubernetes.io/name: back-in-stock-app
 spec:
-  replicas: 0
+  replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: back-in-stock-app
@@ -83,7 +83,7 @@ spec:
           effect: NoSchedule
       containers:
         - name: app
-          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock@sha256:a33e2a102cf79752e6e1752016757ad57c6df666719a40c1c6c435ea6ca13831
+          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock@sha256:ee34cdc5cc131e95abe60938eac00c2ba0d46ec069055529db697585bb2487cd
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -164,7 +164,7 @@ metadata:
   labels:
     app.kubernetes.io/name: back-in-stock-worker-email
 spec:
-  replicas: 0
+  replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: back-in-stock-worker-email
@@ -187,7 +187,7 @@ spec:
           effect: NoSchedule
       containers:
         - name: worker
-          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock-worker-email@sha256:2ac930e4da54c8b6d5d6e7acdbcc958198e6ffd61a8588091a2c6ae045273806
+          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock-worker-email@sha256:39b75e369b904ac58839ec29d518ae52c8436747a763e1b95e2df3138a2347d0
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -275,7 +275,7 @@ spec:
           effect: NoSchedule
       containers:
         - name: worker
-          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock-worker-whatsapp@sha256:897dde37930ea266f92b77abab2ba4e2a401e11e72710d2e5953d79f745cf426
+          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock-worker-whatsapp@sha256:3aaf9eda9177a6c364931bbe896a8771a1ed47d08dff782a2733cfafc42707c9
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -363,7 +363,7 @@ spec:
           effect: NoSchedule
       containers:
         - name: worker
-          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock-worker-telegram@sha256:4ca5347420b4ebbaf2b6773861a736364888ba99c0a7bf00c07387977d6e1112
+          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock-worker-telegram@sha256:7c507ce540fd8a6d400ba433a1da47dc91da6f921b2303d9199d4fc68dcf5559
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -440,7 +440,7 @@ metadata:
   labels:
     app.kubernetes.io/name: back-in-stock-maddy
 spec:
-  replicas: 0
+  replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: back-in-stock-maddy
@@ -509,3 +509,44 @@ spec:
     - name: smtp
       port: 25
       targetPort: smtp
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: back-in-stock-strip-prefix
+  labels:
+    app.kubernetes.io/name: back-in-stock-app
+spec:
+  stripPrefix:
+    prefixes:
+      - /apps/back-in-stock
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: back-in-stock-public
+  labels:
+    app.kubernetes.io/name: back-in-stock-app
+spec:
+  entryPoints:
+    - websecure
+  ingressClassName: traefik-edge
+  routes:
+    - kind: Rule
+      match: Host(`sauvage.e-dani.com`) && PathPrefix(`/apps/back-in-stock`)
+      priority: 1000
+      middlewares:
+        - name: back-in-stock-strip-prefix
+      services:
+        - name: back-in-stock-app
+          port: 80
+    - kind: Rule
+      match: Host(`sauvage.e-dani.com`) && (PathPrefix(`/auth`) || PathPrefix(`/app`) || PathPrefix(`/api`) || PathPrefix(`/webhooks`) || Path(`/healthz`) || Path(`/readyz`))
+      priority: 900
+      services:
+        - name: back-in-stock-app
+          port: 80
+  tls:
+    store:
+      name: default
+      namespace: traefik-edge
