@@ -187,7 +187,7 @@ spec:
           effect: NoSchedule
       containers:
         - name: worker
-          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock-worker-email@sha256:0539d4549d0a9e28e877a9f4580d1a74f35a3c9ff0d40b287fec4be56161efe2
+          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock-worker-email@sha256:f30f9ff05a3384cb8ccce194393d9aef0dbb5edef390ed3352c320ba15447bb5
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -197,6 +197,11 @@ spec:
               value: notifications.email
             - name: HEALTH_PORT
               value: "8080"
+            # Deliver via the Synapse messaging adapter (Gmail API, deliverable)
+            # instead of the bundled Maddy relay (DMARC-dropped). SYNAPSE_RABBITMQ_URL
+            # is injected from the back-in-stock-secrets Vault secret.
+            - name: EMAIL_TRANSPORT
+              value: synapse
             - name: RABBITMQ_DEFAULT_USER
               valueFrom:
                 secretKeyRef:
