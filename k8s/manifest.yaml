@@ -95,6 +95,8 @@ spec:
               value: "3470"
             - name: SHOPIFY_APP_URL
               value: https://sauvage.e-dani.com
+            - name: SCOPES
+              value: "read_products,write_products,read_inventory,read_customers,read_orders,write_orders,read_all_orders,read_customer_payment_methods,read_purchase_options,write_purchase_options,read_payment_mandate,write_payment_mandate"
             - name: CALLBACK_BASE_URL
               value: https://sauvage.e-dani.com
             - name: DB_USER
