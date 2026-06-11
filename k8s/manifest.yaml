@@ -548,7 +548,7 @@ spec:
         - name: back-in-stock-app
           port: 80
     - kind: Rule
-      match: Host(`sauvage.e-dani.com`) && (PathPrefix(`/auth`) || PathPrefix(`/app`) || PathPrefix(`/api`) || PathPrefix(`/webhooks`) || Path(`/healthz`) || Path(`/readyz`))
+      match: Host(`sauvage.e-dani.com`) && (PathPrefix(`/auth`) || PathPrefix(`/app`) || PathPrefix(`/api`) || PathPrefix(`/webhooks`) || PathPrefix(`/__manifest`) || Path(`/healthz`) || Path(`/readyz`))
       priority: 900
       services:
         - name: back-in-stock-app
