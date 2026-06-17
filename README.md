@@ -1,17 +1,23 @@
 # k8s-shopify-back-in-stock-pocharlies
 
-Disabled k8s skeleton for `sauvage:/home/ubuntu/skirmshop/shopify-back-in-stock`.
+GitOps deployment for `shopify-back-in-stock`, the Shopify embedded app named
+`Skirmshop Stock & Preorders`.
 
-The old route pointed at `sauvage.e-dani.com/apps/back-in-stock` on host port
-3470, but that port was not listening during the audit. This skeleton creates
-only a zero-replica Deployment, Service, and Vault-backed secret placeholder.
-It intentionally creates no IngressRoute.
+Routing contract:
 
-Activation steps:
+1. Shopify `application_url` is the canonical origin `https://sauvage.e-dani.com`.
+2. Remix owns `/` and redirects to `/app`, preserving Shopify query params.
+3. Remix owns `/app`, `/auth`, `/api`, `/webhooks`, `/__manifest`, `/healthz`,
+   and `/readyz`.
+4. The Shopify App Proxy owns `/apps/back-in-stock` and Traefik strips that
+   prefix before forwarding to the app.
+5. WhatsApp must not be the fallback for the Shopify app root. WhatsApp has its
+   own hosts (`whatsapp.e-dani.com`, `whatsapp-open.e-dani.com`, and LAN
+   aliases).
 
-1. Finish source repo readiness and build a production image.
-2. Populate `secret/skirmshop/back-in-stock`.
-3. Replace the `pending` image tag and validate `kustomize build k8s`.
-4. Add the disabled ArgoCD Application, sync with `replicas: 0`, then test by
-   temporarily scaling privately.
-5. Add ingress only after Shopify OAuth URLs and rollback are confirmed.
+Keep this route contract aligned with:
+
+- `shopify-back-in-stock/shopify.app.toml`
+- `shopify-back-in-stock/shopify.app.back-in-stock-notifications.toml`
+- `shopify-back-in-stock/scripts/validate-production-config.ts`
+- `k8s-infra-pocharlies/networking/traefik-edge/legacy-public-routes.yaml`

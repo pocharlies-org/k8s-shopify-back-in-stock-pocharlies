@@ -548,6 +548,12 @@ spec:
         - name: back-in-stock-app
           port: 80
     - kind: Rule
+      match: Host(`sauvage.e-dani.com`) && Path(`/`)
+      priority: 950
+      services:
+        - name: back-in-stock-app
+          port: 80
+    - kind: Rule
       match: Host(`sauvage.e-dani.com`) && (PathPrefix(`/auth`) || PathPrefix(`/app`) || PathPrefix(`/api`) || PathPrefix(`/webhooks`) || PathPrefix(`/__manifest`) || Path(`/healthz`) || Path(`/readyz`))
       priority: 900
       services:
