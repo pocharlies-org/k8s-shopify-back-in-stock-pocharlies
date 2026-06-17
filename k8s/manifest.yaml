@@ -83,7 +83,7 @@ spec:
           effect: NoSchedule
       containers:
         - name: app
-          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock@sha256:33a72a4b5683f075a19e832f66e9303851fcbb0b99f84db77189e70e984c3698
+          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock@sha256:cbd8326185bfcfb8c35f159ca97a1f7551479fbc04b08740cc22a957eb6a3f30
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
