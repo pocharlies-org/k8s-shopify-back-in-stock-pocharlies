@@ -83,7 +83,7 @@ spec:
           effect: NoSchedule
       containers:
         - name: app
-          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock@sha256:4ae15b5b833ed9e84c6c7c1a34a7dd1eaa84d549327e69745dd7578c5e6cf9d7
+          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock@sha256:d15696d42ac234e2ce2731260daf61074369c587e4802c18f13cd3673f35eda6
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -104,6 +104,13 @@ spec:
               value: "read_products,write_products,read_inventory,read_customers,read_orders,write_orders,read_all_orders,read_customer_payment_methods,read_purchase_options,write_purchase_options,read_payment_mandate,write_payment_mandate,read_merchant_managed_fulfillment_orders,write_merchant_managed_fulfillment_orders"
             - name: CALLBACK_BASE_URL
               value: https://sauvage.e-dani.com
+            # Canonical storefront host for customer-facing links (the
+            # double-opt-in confirm email link + the confirm page CTA). Prefer
+            # the public skirmshop.es domain over the raw *.myshopify.com host so
+            # the link looks trustworthy. Plain public value (not a secret); if
+            # absent the app falls back to https://<shop> automatically.
+            - name: STOREFRONT_BASE_URL
+              value: https://www.skirmshop.es
             - name: DB_USER
               valueFrom:
                 secretKeyRef:
