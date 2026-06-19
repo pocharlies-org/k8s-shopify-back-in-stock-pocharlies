@@ -83,7 +83,7 @@ spec:
           effect: NoSchedule
       containers:
         - name: app
-          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock@sha256:cbd8326185bfcfb8c35f159ca97a1f7551479fbc04b08740cc22a957eb6a3f30
+          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock@sha256:2f7e95035271934913f2293eabb4093273ae9cf10931d7f454b03b896c5c645e
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -91,6 +91,11 @@ spec:
           env:
             - name: NODE_ENV
               value: production
+            # Bound the V8 old-space heap below the cgroup memory limit so GC
+            # reclaims before the kernel OOMKills the pod. 512Mi leaves headroom
+            # under the 1Gi limit for non-heap RSS (Prisma engine, buffers).
+            - name: NODE_OPTIONS
+              value: --max-old-space-size=512
             - name: PORT
               value: "3470"
             - name: SHOPIFY_APP_URL
@@ -109,8 +114,12 @@ spec:
                 secretKeyRef:
                   name: shared-postgres-app
                   key: password
+            # connection_limit=5 caps the Prisma pool against the SHARED
+            # Postgres (default is num_cpus*2+1, which over-allocated and fed the
+            # contention/OOM storm). pool_timeout=10 fails fast instead of piling
+            # up waiters. Conservative on shared postgres-shared capacity.
             - name: DATABASE_URL
-              value: postgresql://$(DB_USER):$(DB_PASSWORD)@postgres-shared-rw.databases.svc.cluster.local:5432/back_in_stock
+              value: postgresql://$(DB_USER):$(DB_PASSWORD)@postgres-shared-rw.databases.svc.cluster.local:5432/back_in_stock?connection_limit=5&pool_timeout=10
             - name: RABBITMQ_DEFAULT_USER
               valueFrom:
                 secretKeyRef:
@@ -144,12 +153,18 @@ spec:
               port: http
             initialDelaySeconds: 30
             periodSeconds: 10
+          # Memory is OOM-bounded by the cgroup limit (1Gi, raised from 768Mi)
+          # plus the NODE_OPTIONS heap cap above; requests==limits on memory so
+          # the kubelet won't evict under node memory pressure. CPU is left
+          # WITHOUT a hard limit (request 250m only): a hard cpu cap throttles
+          # the webhook handler under burst, which LENGTHENS lock-hold windows
+          # and increases deadlock probability — the opposite of the goal.
           resources:
             requests:
-              cpu: 75m
-              memory: 256Mi
+              cpu: 250m
+              memory: 1Gi
             limits:
-              memory: 768Mi
+              memory: 1Gi
 ---
 apiVersion: v1
 kind: Service
