@@ -83,7 +83,7 @@ spec:
           effect: NoSchedule
       containers:
         - name: app
-          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock@sha256:ae95b85e6e1d9ab934f7ff967eb131a06557efd6cd6f59dfc1fa1c34977cf25c
+          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock@sha256:244e0b20882dadd7f4ed1d205b3dc439bc385e2410157a7d6c60595f2b7404ec
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -217,7 +217,7 @@ spec:
           effect: NoSchedule
       containers:
         - name: worker
-          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock-worker-email@sha256:6f3b28f8f89eb72e3bf6e21aec2d10ba13b511cc00f3642da002967fd578c990
+          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock-worker-email@sha256:c569f86ce00506e1daf7b142e7fa2a03ce294e9b5398064730b63585e2b347e2
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -294,6 +294,13 @@ metadata:
   labels:
     app.kubernetes.io/name: back-in-stock-worker-whatsapp
 spec:
+  # DISABLED (replicas:0) on purpose. The worker boots cleanly and idles, but
+  # WHATSAPP_MCP_URL in back-in-stock-secrets is still the dev placeholder
+  # (http://host.docker.internal:3000) — host.docker.internal does NOT resolve
+  # inside k8s pods. The real connector is mcp-server.whatsapp-mcp.svc:3000. Do
+  # NOT scale to 1 until that Vault key (secret/skirmshop/back-in-stock
+  # WHATSAPP_MCP_URL) is repointed to the in-cluster connector. Channel must
+  # stay disabled until separately validated.
   replicas: 0
   selector:
     matchLabels:
@@ -317,7 +324,7 @@ spec:
           effect: NoSchedule
       containers:
         - name: worker
-          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock-worker-whatsapp@sha256:6b01b7cd9d4d557e38bb58e600571312f690195d324c6b1ce8e4de72d05e511f
+          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock-worker-whatsapp@sha256:01ed217fad783007db2fd8aa8232824157fb69bc6ce8bb20e46ea209b3e248da
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -382,6 +389,12 @@ metadata:
   labels:
     app.kubernetes.io/name: back-in-stock-worker-telegram
 spec:
+  # DISABLED (replicas:0) on purpose. The worker boots cleanly and idles, but
+  # TELEGRAM_BOT_TOKEN in back-in-stock-secrets is still the literal placeholder
+  # ("PLACEHOLDER"), so the bot listener would just 401-retry-loop against the
+  # Telegram API and no real bot exists. Do NOT scale to 1 until that Vault key
+  # (secret/skirmshop/back-in-stock TELEGRAM_BOT_TOKEN) holds a real BotFather
+  # token. Channel must stay disabled until separately validated.
   replicas: 0
   selector:
     matchLabels:
@@ -405,7 +418,7 @@ spec:
           effect: NoSchedule
       containers:
         - name: worker
-          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock-worker-telegram@sha256:d434cafc8c6159a5db51557f08278f5796fd5312848537deacdbbcd85711e9a7
+          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock-worker-telegram@sha256:ff01ea928559ddcaea35cc8f24233b971ba18267be855f6f66a6811ccd3f5b67
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
