@@ -83,7 +83,7 @@ spec:
           effect: NoSchedule
       containers:
         - name: app
-          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock@sha256:cc3ef295f4b9ff1b92da6e7302eca810df33b933c9f26bd47e9bd260d8657956
+          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock@sha256:ae95b85e6e1d9ab934f7ff967eb131a06557efd6cd6f59dfc1fa1c34977cf25c
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -217,7 +217,7 @@ spec:
           effect: NoSchedule
       containers:
         - name: worker
-          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock-worker-email@sha256:d6b2563b7ce89576d5771062b5a450f1d84cba98654a34d70e69da4da5a26e30
+          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock-worker-email@sha256:6f3b28f8f89eb72e3bf6e21aec2d10ba13b511cc00f3642da002967fd578c990
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -232,6 +232,13 @@ spec:
             # is injected from the back-in-stock-secrets Vault secret.
             - name: EMAIL_TRANSPORT
               value: synapse
+            # Canonical storefront host for the restock-email one-click
+            # unsubscribe link (worker self-derives the token from
+            # SHOPIFY_API_SECRET via envFrom back-in-stock-secrets). If absent,
+            # the worker falls back to https://<shop>; if the secret is absent
+            # the footer is simply omitted (graceful).
+            - name: STOREFRONT_BASE_URL
+              value: https://www.skirmshop.es
             - name: RABBITMQ_DEFAULT_USER
               valueFrom:
                 secretKeyRef:
