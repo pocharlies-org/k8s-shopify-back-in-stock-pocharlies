@@ -83,7 +83,7 @@ spec:
           effect: NoSchedule
       containers:
         - name: app
-          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock@sha256:244e0b20882dadd7f4ed1d205b3dc439bc385e2410157a7d6c60595f2b7404ec
+          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock@sha256:20dbd03f1ac1ab16ae7e7c17117434a68193d86d94d5ee4a1074c9f59be20887
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -217,7 +217,7 @@ spec:
           effect: NoSchedule
       containers:
         - name: worker
-          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock-worker-email@sha256:c569f86ce00506e1daf7b142e7fa2a03ce294e9b5398064730b63585e2b347e2
+          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock-worker-email@sha256:de8867382e1472cd6232f2dcc19cd3774fb91a2080f8b82138a33b4627e694f3
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -294,14 +294,16 @@ metadata:
   labels:
     app.kubernetes.io/name: back-in-stock-worker-whatsapp
 spec:
-  # DISABLED (replicas:0) on purpose. The worker boots cleanly and idles, but
-  # WHATSAPP_MCP_URL in back-in-stock-secrets is still the dev placeholder
-  # (http://host.docker.internal:3000) — host.docker.internal does NOT resolve
-  # inside k8s pods. The real connector is mcp-server.whatsapp-mcp.svc:3000. Do
-  # NOT scale to 1 until that Vault key (secret/skirmshop/back-in-stock
-  # WHATSAPP_MCP_URL) is repointed to the in-cluster connector. Channel must
-  # stay disabled until separately validated.
-  replicas: 0
+  # WhatsApp now delivers through the Synapse messaging adapter (the live
+  # whatsapp-mcp connectors), exactly like the email worker — the bespoke
+  # WHATSAPP_MCP_URL HTTP sender is gone. Delivery is queue-based: the worker
+  # publishes messaging.<tenant>.send to the "commands" exchange on the /synapse
+  # vhost. SYNAPSE_RABBITMQ_URL is injected from back-in-stock-secrets (same as
+  # the email worker); SYNAPSE_TENANT/SYNAPSE_COMMANDS_EXCHANGE default to
+  # skirmshop/commands in the worker. Scale to 1 — the channel can now actually
+  # deliver. (Single replica is enough for the current volume; scale out
+  # horizontally if the notifications.whatsapp queue backs up.)
+  replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: back-in-stock-worker-whatsapp
@@ -324,7 +326,7 @@ spec:
           effect: NoSchedule
       containers:
         - name: worker
-          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock-worker-whatsapp@sha256:01ed217fad783007db2fd8aa8232824157fb69bc6ce8bb20e46ea209b3e248da
+          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock-worker-whatsapp@sha256:bea8ba3701dec2db41345a4418b4059a10145fc2f581eedb156ba52e03bf353c
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
