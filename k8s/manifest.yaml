@@ -83,7 +83,7 @@ spec:
           effect: NoSchedule
       containers:
         - name: app
-          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock@sha256:20dbd03f1ac1ab16ae7e7c17117434a68193d86d94d5ee4a1074c9f59be20887
+          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock@sha256:f10cffa62b687eb82c8d5711f992137394ca6d0749c8daa5d37ba627627c7b80
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -217,7 +217,7 @@ spec:
           effect: NoSchedule
       containers:
         - name: worker
-          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock-worker-email@sha256:de8867382e1472cd6232f2dcc19cd3774fb91a2080f8b82138a33b4627e694f3
+          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock-worker-email@sha256:b52b2702c3ecaf6f77ab54bca027fe7e9d1293d17afb3edb74c3e8c88eb9601a
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -326,7 +326,7 @@ spec:
           effect: NoSchedule
       containers:
         - name: worker
-          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock-worker-whatsapp@sha256:bea8ba3701dec2db41345a4418b4059a10145fc2f581eedb156ba52e03bf353c
+          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock-worker-whatsapp@sha256:930530eb7c7e542718d1882cb7ad88ac3e4333081ea82fd22551f06bbc057360
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -379,112 +379,6 @@ metadata:
 spec:
   selector:
     app.kubernetes.io/name: back-in-stock-worker-whatsapp
-  ports:
-    - name: http
-      port: 80
-      targetPort: http
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: back-in-stock-worker-telegram
-  labels:
-    app.kubernetes.io/name: back-in-stock-worker-telegram
-spec:
-  # DISABLED (replicas:0) on purpose. The worker boots cleanly and idles, but
-  # TELEGRAM_BOT_TOKEN in back-in-stock-secrets is still the literal placeholder
-  # ("PLACEHOLDER"), so the bot listener would just 401-retry-loop against the
-  # Telegram API and no real bot exists. Do NOT scale to 1 until that Vault key
-  # (secret/skirmshop/back-in-stock TELEGRAM_BOT_TOKEN) holds a real BotFather
-  # token. Channel must stay disabled until separately validated.
-  replicas: 0
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: back-in-stock-worker-telegram
-  template:
-    metadata:
-      labels:
-        app.kubernetes.io/name: back-in-stock-worker-telegram
-    spec:
-      automountServiceAccountToken: false
-      enableServiceLinks: false
-      imagePullSecrets:
-        - name: harbor-pull
-      nodeSelector:
-        role: edge
-        kubernetes.io/arch: amd64
-      tolerations:
-        - key: role
-          operator: Equal
-          value: edge
-          effect: NoSchedule
-      containers:
-        - name: worker
-          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock-worker-telegram@sha256:ff01ea928559ddcaea35cc8f24233b971ba18267be855f6f66a6811ccd3f5b67
-          imagePullPolicy: IfNotPresent
-          ports:
-            - name: http
-              containerPort: 8080
-          env:
-            - name: QUEUE_NAME
-              value: notifications.telegram
-            - name: HEALTH_PORT
-              value: "8080"
-            - name: DB_USER
-              valueFrom:
-                secretKeyRef:
-                  name: shared-postgres-app
-                  key: username
-            - name: DB_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: shared-postgres-app
-                  key: password
-            - name: DATABASE_URL
-              value: postgresql://$(DB_USER):$(DB_PASSWORD)@postgres-shared-rw.databases.svc.cluster.local:5432/back_in_stock
-            - name: RABBITMQ_DEFAULT_USER
-              valueFrom:
-                secretKeyRef:
-                  name: rabbitmq-secrets
-                  key: RABBITMQ_DEFAULT_USER
-            - name: RABBITMQ_DEFAULT_PASS
-              valueFrom:
-                secretKeyRef:
-                  name: rabbitmq-secrets
-                  key: RABBITMQ_DEFAULT_PASS
-            - name: RABBITMQ_URL
-              value: amqp://$(RABBITMQ_DEFAULT_USER):$(RABBITMQ_DEFAULT_PASS)@shared-rabbitmq.databases.svc.cluster.local:5672/%2Fback-in-stock
-          envFrom:
-            - secretRef:
-                name: back-in-stock-secrets
-          livenessProbe:
-            httpGet:
-              path: /healthz
-              port: http
-            initialDelaySeconds: 20
-            periodSeconds: 20
-          readinessProbe:
-            httpGet:
-              path: /readyz
-              port: http
-            initialDelaySeconds: 20
-            periodSeconds: 10
-          resources:
-            requests:
-              cpu: 25m
-              memory: 128Mi
-            limits:
-              memory: 512Mi
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: back-in-stock-worker-telegram
-  labels:
-    app.kubernetes.io/name: back-in-stock-worker-telegram
-spec:
-  selector:
-    app.kubernetes.io/name: back-in-stock-worker-telegram
   ports:
     - name: http
       port: 80
