@@ -1,0 +1,72 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: back-in-stock-preorder-hold-reconcile
+  labels:
+    app.kubernetes.io/name: back-in-stock-preorder-hold-reconcile
+spec:
+  # Retry preorder/factory fulfillment holds that previously failed (the
+  # orders/create webhook can lose the race with Picqer pulling the order).
+  # Calls POST /api/admin/preorders/reconcile-holds; the handler is idempotent.
+  schedule: "*/10 * * * *"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 120
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 180
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: back-in-stock-preorder-hold-reconcile
+        spec:
+          restartPolicy: Never
+          automountServiceAccountToken: false
+          enableServiceLinks: false
+          imagePullSecrets:
+            - name: harbor-pull
+          nodeSelector:
+            role: edge
+            kubernetes.io/arch: amd64
+          tolerations:
+            - key: role
+              operator: Equal
+              value: edge
+              effect: NoSchedule
+          containers:
+            - name: reconcile
+              # Reuse the app image (already cached on the edge node, pulled via
+              # harbor-pull) only to run a tiny node fetch — no docker.io dependency.
+              image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock@sha256:ee5a663b11e1ceb8cb97740ffbd5ee3e9b61bc8ea50cbe26a457da37cc6a6202
+              imagePullPolicy: IfNotPresent
+              command:
+                - node
+                - -e
+                - |
+                  const url = 'http://back-in-stock-app/api/admin/preorders/reconcile-holds';
+                  const token = process.env.PREORDERS_API_TOKEN;
+                  if (!token) { console.error('PREORDERS_API_TOKEN missing'); process.exit(1); }
+                  const ctrl = new AbortController();
+                  const timer = setTimeout(() => ctrl.abort(), 120000);
+                  fetch(url, { method: 'POST', headers: { Authorization: 'Bearer ' + token }, signal: ctrl.signal })
+                    .then(async (r) => {
+                      clearTimeout(timer);
+                      const body = await r.text();
+                      console.log('reconcile-holds', r.status, body);
+                      process.exit(r.ok ? 0 : 1);
+                    })
+                    .catch((e) => { clearTimeout(timer); console.error('reconcile-holds error', e && e.message); process.exit(1); });
+              env:
+                - name: PREORDERS_API_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: back-in-stock-secrets
+                      key: PREORDERS_API_TOKEN
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  memory: 256Mi

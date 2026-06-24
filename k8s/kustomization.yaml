@@ -6,6 +6,7 @@ namespace: skirmshop
 resources:
   - externalsecret.yaml
   - manifest.yaml
+  - cronjob-reconcile-holds.yaml
 
 labels:
   - includeSelectors: false
