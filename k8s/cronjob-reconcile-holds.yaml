@@ -39,7 +39,7 @@ spec:
             - name: reconcile
               # Reuse the app image (already cached on the edge node, pulled via
               # harbor-pull) only to run a tiny node fetch — no docker.io dependency.
-              image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock@sha256:ee5a663b11e1ceb8cb97740ffbd5ee3e9b61bc8ea50cbe26a457da37cc6a6202
+              image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock@sha256:b170c0b9d0987eb1dcb6161497c4980c28d38c8a70e187a41d4c0206a9853bda
               imagePullPolicy: IfNotPresent
               command:
                 - node
