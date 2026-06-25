@@ -484,7 +484,7 @@ spec:
   ingressClassName: traefik-edge
   routes:
     - kind: Rule
-      match: Host(`sauvage.e-dani.com`) && PathPrefix(`/apps/back-in-stock`)
+      match: (Host(`sauvage.e-dani.com`) || Host(`server.skirmshop.es`)) &&PathPrefix(`/apps/back-in-stock`)
       priority: 1000
       middlewares:
         - name: back-in-stock-strip-prefix
@@ -492,13 +492,13 @@ spec:
         - name: back-in-stock-app
           port: 80
     - kind: Rule
-      match: Host(`sauvage.e-dani.com`) && Path(`/`)
+      match: (Host(`sauvage.e-dani.com`) || Host(`server.skirmshop.es`)) &&Path(`/`)
       priority: 950
       services:
         - name: back-in-stock-app
           port: 80
     - kind: Rule
-      match: Host(`sauvage.e-dani.com`) && (PathPrefix(`/auth`) || PathPrefix(`/app`) || PathPrefix(`/api`) || PathPrefix(`/webhooks`) || PathPrefix(`/__manifest`) || Path(`/healthz`) || Path(`/readyz`))
+      match: (Host(`sauvage.e-dani.com`) || Host(`server.skirmshop.es`)) &&(PathPrefix(`/auth`) || PathPrefix(`/app`) || PathPrefix(`/api`) || PathPrefix(`/webhooks`) || PathPrefix(`/__manifest`) || Path(`/healthz`) || Path(`/readyz`))
       priority: 900
       services:
         - name: back-in-stock-app
