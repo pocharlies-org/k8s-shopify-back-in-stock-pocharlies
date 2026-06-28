@@ -43,7 +43,7 @@ spec:
               # Reusa la imagen de la app (cacheada en el nodo edge) solo para un
               # node fetch — no depende de docker.io. El digest se mantiene alineado
               # con la app en cada deploy.
-              image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock@sha256:df24ce1e35ba3bcd4ae01ea5db9d8f1a0dbb5b9e714d61958bbeb112cff927a7
+              image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock@sha256:66cd235d3b54171536f561ae64b86c28ae028f8d9f13bd6cb033933d50b52506
               imagePullPolicy: IfNotPresent
               command:
                 - node
