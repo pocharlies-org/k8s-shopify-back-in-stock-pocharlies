@@ -1,0 +1,81 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: back-in-stock-backorder-enroll
+  labels:
+    app.kubernetes.io/name: back-in-stock-backorder-enroll
+spec:
+  # Backfill periódico: enrola TODO producto backorder (CONTINUE + stock 0) que aún
+  # no esté en una campaña factory_order, dándole selling plan + hold. Cierra la
+  # fuga "bare CONTINUE" de forma duradera (el apply-tick de catalog-RAG marca
+  # nuevos backorder cada hora; este cron los engancha al sistema factory).
+  # Llama POST /api/admin/preorders/backorder-import {action:enroll}; idempotente
+  # (no-op cuando preview.safeProductCount=0).
+  schedule: "15 */6 * * *"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 300
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      activeDeadlineSeconds: 600
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: back-in-stock-backorder-enroll
+        spec:
+          restartPolicy: Never
+          automountServiceAccountToken: false
+          enableServiceLinks: false
+          imagePullSecrets:
+            - name: harbor-pull
+          nodeSelector:
+            role: edge
+            kubernetes.io/arch: amd64
+          tolerations:
+            - key: role
+              operator: Equal
+              value: edge
+              effect: NoSchedule
+          containers:
+            - name: enroll
+              # Reusa la imagen de la app (cacheada en el nodo edge) solo para un
+              # node fetch — no depende de docker.io. El digest se mantiene alineado
+              # con la app en cada deploy.
+              image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock@sha256:df24ce1e35ba3bcd4ae01ea5db9d8f1a0dbb5b9e714d61958bbeb112cff927a7
+              imagePullPolicy: IfNotPresent
+              command:
+                - node
+                - -e
+                - |
+                  const url = 'http://back-in-stock-app/api/admin/preorders/backorder-import';
+                  const token = process.env.PREORDERS_API_TOKEN;
+                  if (!token) { console.error('PREORDERS_API_TOKEN missing'); process.exit(1); }
+                  const ctrl = new AbortController();
+                  const timer = setTimeout(() => ctrl.abort(), 540000);
+                  fetch(url, {
+                    method: 'POST',
+                    headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'enroll' }),
+                    signal: ctrl.signal,
+                  })
+                    .then(async (r) => {
+                      clearTimeout(timer);
+                      const body = await r.text();
+                      console.log('backorder-enroll', r.status, body.slice(0, 1000));
+                      process.exit(r.ok ? 0 : 1);
+                    })
+                    .catch((e) => { clearTimeout(timer); console.error('backorder-enroll error', e && e.message); process.exit(1); });
+              env:
+                - name: PREORDERS_API_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: back-in-stock-secrets
+                      key: PREORDERS_API_TOKEN
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  memory: 256Mi
