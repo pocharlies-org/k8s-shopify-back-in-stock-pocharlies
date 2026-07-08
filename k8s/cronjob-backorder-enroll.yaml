@@ -19,7 +19,12 @@ spec:
   jobTemplate:
     spec:
       backoffLimit: 1
-      activeDeadlineSeconds: 600
+      # El enroll es un batch de reconciliación sobre 3000+ productos (~4min
+      # normal); bajo variance de la Shopify Admin API (rate-limits/carga) puede
+      # pasar de 10min. Con 600s el job se moría con DeadlineExceeded de forma
+      # intermitente (→ ArgoCD Degraded). 1800s da headroom (7.5x el caso normal);
+      # si algún día supera 30min es un hang real que sí conviene fallar.
+      activeDeadlineSeconds: 1800
       template:
         metadata:
           labels:
@@ -53,7 +58,10 @@ spec:
                   const token = process.env.PREORDERS_API_TOKEN;
                   if (!token) { console.error('PREORDERS_API_TOKEN missing'); process.exit(1); }
                   const ctrl = new AbortController();
-                  const timer = setTimeout(() => ctrl.abort(), 540000);
+                  // 29min: por debajo de activeDeadlineSeconds (1800s) para que el
+                  // fetch aborte con un error legible ("...error <aborted>") ANTES
+                  // de que el job muera por DeadlineExceeded (que no deja mensaje).
+                  const timer = setTimeout(() => ctrl.abort(), 1740000);
                   fetch(url, {
                     method: 'POST',
                     headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
