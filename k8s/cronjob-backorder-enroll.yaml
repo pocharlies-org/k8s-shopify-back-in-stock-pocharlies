@@ -11,6 +11,14 @@ spec:
   # nuevos backorder cada hora; este cron los engancha al sistema factory).
   # Llama POST /api/admin/preorders/backorder-import {action:enroll}; idempotente
   # (no-op cuando preview.safeProductCount=0).
+  #
+  # SUSPENDIDO 2026-07-09 por decisión de producto (Dani): este auto-enroll
+  # convertía en preorder CUALQUIER producto CONTINUE+stock0 sin campaña, es
+  # decir, decidía solo la "comprabilidad a fábrica" — que debe ser una decisión
+  # MANUAL por campaña, no un cron. Las 24 campañas factory_order existentes se
+  # CONSERVAN (decisión C); solo se para la creación automática futura.
+  # Para reactivar: quitar `suspend: true`.
+  suspend: true
   schedule: "15 */6 * * *"
   concurrencyPolicy: Forbid
   startingDeadlineSeconds: 300
