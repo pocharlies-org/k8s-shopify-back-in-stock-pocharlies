@@ -13,7 +13,7 @@ spec:
   # product is still requiresSellingPlan=true while the storefront widget
   # (correctly) stops forcing the plan, so buyers get a 422 until this flips
   # the flag. 10 minutes bounds that window (same cadence as hold-reconcile).
-  schedule: "*/10 * * * *"
+  schedule: "3-59/10 * * * *"
   concurrencyPolicy: Forbid
   startingDeadlineSeconds: 120
   successfulJobsHistoryLimit: 3
