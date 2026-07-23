@@ -1,0 +1,82 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: back-in-stock-preorder-coverage-reconcile
+  labels:
+    app.kubernetes.io/name: back-in-stock-preorder-coverage-reconcile
+spec:
+  # Coverage reconcile (requiresSellingPlan <-> stock): campaign products whose
+  # variants are all in stock are sold normally (flag cleared, variants DENY);
+  # stocked-out products are restored to preorder. The handler is an idempotent,
+  # capped, self-healing desired-state loop, so a tight schedule is safe — and
+  # wanted: between stock changing and the next tick, a restocked preorder
+  # product is still requiresSellingPlan=true while the storefront widget
+  # (correctly) stops forcing the plan, so buyers get a 422 until this flips
+  # the flag. 10 minutes bounds that window (same cadence as hold-reconcile).
+  schedule: "*/10 * * * *"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 120
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      # Same sizing rationale as hold-reconcile: normal runs are seconds; Shopify
+      # Admin API variance can stretch multi-product transition runs past 2min.
+      # 600s gives >4x headroom; anything longer is a real hang that should fail.
+      activeDeadlineSeconds: 600
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: back-in-stock-preorder-coverage-reconcile
+        spec:
+          restartPolicy: Never
+          automountServiceAccountToken: false
+          enableServiceLinks: false
+          imagePullSecrets:
+            - name: harbor-pull
+          nodeSelector:
+            role: edge
+            kubernetes.io/arch: amd64
+          tolerations:
+            - key: role
+              operator: Equal
+              value: edge
+              effect: NoSchedule
+          containers:
+            - name: reconcile
+              # Reuse the app image (already cached on the edge node, pulled via
+              # harbor-pull) only to run a tiny node fetch — no docker.io dependency.
+              image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock@sha256:f112837911a2a812cbb15dfdca6ccd90d531ef0970e9699a37ffe9db81f61da3
+              imagePullPolicy: IfNotPresent
+              command:
+                - node
+                - -e
+                - |
+                  const url = 'http://back-in-stock-app/api/admin/preorders/reconcile-coverage';
+                  const token = process.env.PREORDERS_API_TOKEN;
+                  if (!token) { console.error('PREORDERS_API_TOKEN missing'); process.exit(1); }
+                  const ctrl = new AbortController();
+                  // 9min: por debajo de activeDeadlineSeconds (600s) para abortar
+                  // con error legible antes del DeadlineExceeded silencioso del job.
+                  const timer = setTimeout(() => ctrl.abort(), 540000);
+                  fetch(url, { method: 'POST', headers: { Authorization: 'Bearer ' + token }, signal: ctrl.signal })
+                    .then(async (r) => {
+                      clearTimeout(timer);
+                      const body = await r.text();
+                      console.log('reconcile-coverage', r.status, body);
+                      process.exit(r.ok ? 0 : 1);
+                    })
+                    .catch((e) => { clearTimeout(timer); console.error('reconcile-coverage error', e && e.message); process.exit(1); });
+              env:
+                - name: PREORDERS_API_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: back-in-stock-secrets
+                      key: PREORDERS_API_TOKEN
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  memory: 256Mi
