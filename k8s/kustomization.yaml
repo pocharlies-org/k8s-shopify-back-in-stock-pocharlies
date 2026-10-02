@@ -7,7 +7,6 @@ resources:
   - externalsecret.yaml
   - manifest.yaml
   - cronjob-reconcile-holds.yaml
-  - cronjob-backorder-enroll.yaml
   - cronjob-reconcile-coverage.yaml
 
 labels:

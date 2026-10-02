@@ -18,7 +18,7 @@ spec:
       backoffLimit: 2
       # Reconcile de holds: normal ~50s, pero bajo variance de la Shopify Admin
       # API sube de 2min y con 180s el job se moría con DeadlineExceeded (→ ArgoCD
-      # Degraded), mismo patrón que backorder-enroll. 600s da headroom (>4x el pico
+      # Degraded), mismo patrón que el antiguo backorder-enroll. 600s da headroom (>4x el pico
       # observado de ~2m27s); un run >10min sería un hang real que sí fallar.
       activeDeadlineSeconds: 600
       template:
