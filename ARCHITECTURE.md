@@ -16,7 +16,7 @@ Kustomize + `manifest.yaml` plano; sin Helm; no usa la base del framework.
 Ninguno propio.
 
 ## Cómo se construye
-`k8s/manifest.yaml` (ConfigMap, 4 Deployments con sus Services, Middleware, IngressRoute), tres CronJobs con la imagen de la app: `backorder-enroll` (`15 */6 * * *`), `reconcile-coverage` (`3-59/10 * * * *`), `reconcile-holds` (`*/10 * * * *`).
+`k8s/manifest.yaml` (ConfigMap, 4 Deployments con sus Services, Middleware, IngressRoute), dos CronJobs con la imagen de la app: `reconcile-coverage` (`3-59/10 * * * *`), `reconcile-holds` (`*/10 * * * *`).
 
 ## Tests y validaciones
 `reusable-ci.yml` (yamllint/kustomize/kubeconform).
