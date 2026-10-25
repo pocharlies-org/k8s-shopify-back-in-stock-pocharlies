@@ -74,7 +74,6 @@ spec:
       imagePullSecrets:
         - name: harbor-pull
       nodeSelector:
-        role: edge
         kubernetes.io/arch: amd64
       tolerations:
         - key: role
@@ -208,7 +207,6 @@ spec:
       imagePullSecrets:
         - name: harbor-pull
       nodeSelector:
-        role: edge
         kubernetes.io/arch: amd64
       tolerations:
         - key: role
@@ -317,7 +315,6 @@ spec:
       imagePullSecrets:
         - name: harbor-pull
       nodeSelector:
-        role: edge
         kubernetes.io/arch: amd64
       tolerations:
         - key: role
@@ -403,7 +400,6 @@ spec:
       automountServiceAccountToken: false
       enableServiceLinks: false
       nodeSelector:
-        role: edge
         kubernetes.io/arch: amd64
       tolerations:
         - key: role
