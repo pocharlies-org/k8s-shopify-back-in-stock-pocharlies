@@ -82,7 +82,7 @@ spec:
           effect: NoSchedule
       containers:
         - name: app
-          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock@sha256:0571359832530a9d44e4a62e4b91514fc721bb923962c28540c1894b596104ca
+          image: harbor.lan.e-dani.com/homelab/shopify-back-in-stock@sha256:adc8dd17395050de4fa824a998459d26e5b3faff3b63eded1cbf1c2a62056a67
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -138,6 +138,15 @@ spec:
                   key: RABBITMQ_DEFAULT_PASS
             - name: RABBITMQ_URL
               value: amqp://$(RABBITMQ_DEFAULT_USER):$(RABBITMQ_DEFAULT_PASS)@shared-rabbitmq.databases.svc.cluster.local:5672/%2Fback-in-stock
+            # SKIRM-651: el aviso de pedido a fábrica sin purchase order pregunta al picker
+            # (picker.api.purchase_orders.v1). Mismo token que usa el panel (ns skirmshop).
+            - name: PICKER_URL
+              value: http://skirmshop-picker.skirmshop.svc.cluster.local:80
+            - name: PURCHASE_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: picker-secrets
+                  key: PURCHASE_API_TOKEN
           envFrom:
             - secretRef:
                 name: back-in-stock-secrets
