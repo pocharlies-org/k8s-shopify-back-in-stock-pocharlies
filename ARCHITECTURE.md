@@ -16,7 +16,7 @@ Kustomize + `manifest.yaml` plano; sin Helm; no usa la base del framework.
 Ninguno propio.
 
 ## Cómo se construye
-`k8s/manifest.yaml` (ConfigMap, 4 Deployments con sus Services, Middleware, IngressRoute), dos CronJobs con la imagen de la app: `reconcile-coverage` (`3-59/10 * * * *`), `reconcile-holds` (`*/10 * * * *`).
+`k8s/manifest.yaml` (ConfigMap, 4 Deployments con sus Services, Middleware, IngressRoute) y un CronJob con la imagen de la app: `reconcile-holds` (`23 * * * *`), desde SKIRM-624 solo red de reintento declarada de la carrera orders/create↔Picqer-pull (los reconcilers reaccionan a los webhooks `inventory_levels/update` y `orders/create` en la app; el CronJob `reconcile-coverage` de `3-59/10` se borró).
 
 ## Tests y validaciones
 `reusable-ci.yml` (yamllint/kustomize/kubeconform).
@@ -25,4 +25,4 @@ Ninguno propio.
 `ci.yml`, `pr-review.yml`; sin `release.yml` (los digests se editan en los manifests; no verificado quién). ArgoCD lee `main`.
 
 ## Decisiones y trampas
-- Los CronJobs llevan digests propios, distintos entre sí: al subir imagen hay que actualizar los tres más el Deployment.
+- El CronJob lleva un digest propio, distinto del del Deployment: al subir imagen hay que actualizar ambos (SKIRM-624 dejó uno solo; el `reconcile-coverage` fue borrado).

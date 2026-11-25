@@ -5,13 +5,29 @@ metadata:
   labels:
     app.kubernetes.io/name: back-in-stock-preorder-hold-reconcile
 spec:
-  # Retry preorder/factory fulfillment holds that previously failed (the
-  # orders/create webhook can lose the race with Picqer pulling the order).
-  # Calls POST /api/admin/preorders/reconcile-holds; the handler is idempotent.
-  # SKIRM-405: the same call runs the stock gate (holds a preorder its free stock
-  # cannot cover, releases it when stock arrives — not on its date) and the
-  # once-per-campaign "ships in a week" notice (Telegram ops + info@skirmshop.es).
-  schedule: "*/10 * * * *"
+  # SKIRM-624 (ley SC-5617, todo por eventos): this CronJob is NO LONGER the global
+  # 10-min sweep. The reconcilers now react to the webhooks the app already
+  # receives (repo shopify-back-in-stock):
+  #   - coverage (requiresSellingPlan<->stock): inventory_levels/update, scoped to
+  #     the changed variant. A Picqer receipts.completed arrives through the same
+  #     webhook: Shopify's `available` is Picqer's free stock, so a completed
+  #     receipt updates the Shopify inventory level and fires it.
+  #   - holds + stock gate: orders/create (hold inline via processPreorderOrder +
+  #     stock gate scoped to the new order's variants) and inventory_levels/update
+  #     (stock gate scoped to the restocked variant — releases held orders the
+  #     moment stock lands).
+  # The coverage CronJob (3-59/10) is deleted here; the */10 global hold sweep is
+  # replaced by this DECLARED retry net, kept ONLY for the orders/create<->Picqer
+  # -pull race: the warehouse pulling the order is an external event back-in-stock
+  # never receives (the fulfillment order becomes "uninterruptible" and only
+  # returns to holdable when Picqer releases it, for which no webhook exists), so
+  # a failed hold has no event to wait on — a scheduled retry is the only
+  # recovery path. Hourly bounds the delay of that rare failure (the race itself
+  # resolves in minutes, and the hold's own deadline is the campaign ship date,
+  # weeks away). The endpoint also keeps the global stock-gate pass and the
+  # once-per-campaign "ships in a week" notice (Telegram ops + info@skirmshop.es)
+  # as the safety net for events lost after Shopify's webhook-redelivery window.
+  schedule: "23 * * * *"
   concurrencyPolicy: Forbid
   startingDeadlineSeconds: 120
   successfulJobsHistoryLimit: 3
