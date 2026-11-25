@@ -138,6 +138,15 @@ spec:
                   key: RABBITMQ_DEFAULT_PASS
             - name: RABBITMQ_URL
               value: amqp://$(RABBITMQ_DEFAULT_USER):$(RABBITMQ_DEFAULT_PASS)@shared-rabbitmq.databases.svc.cluster.local:5672/%2Fback-in-stock
+            # SKIRM-651: el aviso de pedido a fábrica sin purchase order pregunta al picker
+            # (picker.api.purchase_orders.v1). Mismo token que usa el panel (ns skirmshop).
+            - name: PICKER_URL
+              value: http://skirmshop-picker.skirmshop.svc.cluster.local:80
+            - name: PURCHASE_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: picker-secrets
+                  key: PURCHASE_API_TOKEN
           envFrom:
             - secretRef:
                 name: back-in-stock-secrets
